@@ -18,7 +18,8 @@ import {
   CheckCircle2,
   Trash2,
   Plus,
-  Minus
+  Minus,
+  HelpCircle
 } from 'lucide-react';
 
 interface Product {
@@ -35,7 +36,7 @@ const PRODUCTS: Product[] = [
     name: 'Cimento CP-II 50kg',
     price: 38.50,
     category: 'fundacao',
-    image: 'https://images.unsplash.com/photo-1518709779341-56cf4535e94b?auto=format&fit=crop&q=80&w=800'
+    image: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: '2',
@@ -49,14 +50,14 @@ const PRODUCTS: Product[] = [
     name: 'Cabo Elétrico 2.5mm 100m',
     price: 54.90,
     category: 'eletrica',
-    image: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&q=80&w=800'
+    image: 'https://images.unsplash.com/photo-1558444458-5f75bc9ddbdc?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: '4',
     name: 'Tinta Acrílica Premium 18L',
     price: 189.00,
     category: 'acabamento',
-    image: 'https://images.unsplash.com/photo-1589939705384-5185138a047a?auto=format&fit=crop&q=80&w=800'
+    image: 'https://images.unsplash.com/photo-1562157705-52c1664971be?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: '5',
@@ -70,21 +71,35 @@ const PRODUCTS: Product[] = [
     name: 'Interruptor Duplo',
     price: 18.50,
     category: 'eletrica',
-    image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=80&w=800'
+    image: 'https://images.unsplash.com/photo-1621905252803-01046467367c?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: '7',
     name: 'Argamassa AC-I 20kg',
     price: 15.90,
     category: 'acabamento',
-    image: 'https://images.unsplash.com/photo-1621905252803-01046467367c?auto=format&fit=crop&q=80&w=800'
+    image: 'https://images.unsplash.com/photo-1564360533031-628f2ca4b1c2?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: '8',
     name: 'Disjuntor Monofásico 20A',
     price: 12.00,
     category: 'eletrica',
-    image: 'https://images.unsplash.com/photo-1558444458-5f75bc9ddbdc?auto=format&fit=crop&q=80&w=800'
+    image: 'https://images.unsplash.com/photo-1651558064560-6426466f9175?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: '9',
+    name: 'Tubo Esgoto 100mm 6m',
+    price: 89.90,
+    category: 'fundacao',
+    image: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: '10',
+    name: 'Lâmpada LED 9W (Kit 5)',
+    price: 45.00,
+    category: 'eletrica',
+    image: 'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&q=80&w=800'
   }
 ];
 
@@ -107,41 +122,47 @@ export default function App() {
 
   const addToCart = (product: Product) => {
     setCart(prev => {
-      const existing = prev.find(item => item.product.id === product.id);
-      if (existing) {
-        return prev.map(item => 
-          item.product.id === product.id 
-            ? { ...item, quantity: item.quantity + 1 } 
-            : item
-        );
+      // Ensure we compare IDs reliably
+      const productId = String(product.id);
+      const existingIndex = prev.findIndex(item => String(item.product.id) === productId);
+      
+      if (existingIndex !== -1) {
+        const newCart = [...prev];
+        newCart[existingIndex] = {
+          ...newCart[existingIndex],
+          quantity: newCart[existingIndex].quantity + 1
+        };
+        return newCart;
       }
+      
       return [...prev, { product, quantity: 1 }];
     });
   };
 
   const removeFromCart = (productId: string) => {
-    setCart(prev => prev.filter(item => item.product.id !== productId));
+    setCart(prev => prev.filter(item => String(item.product.id) !== String(productId)));
   };
 
   const updateQuantity = (productId: string, delta: number) => {
-    setCart(prev => prev.map(item => {
-      if (item.product.id === productId) {
-        const newQty = Math.max(0, item.quantity + delta);
-        return { ...item, quantity: newQty };
-      }
-      return item;
-    }).filter(item => item.quantity > 0));
+    setCart(prev => {
+      const targetId = String(productId);
+      return prev.map(item => {
+        if (String(item.product.id) === targetId) {
+          const newQty = Math.max(0, item.quantity + delta);
+          return { ...item, quantity: newQty };
+        }
+        return item;
+      }).filter(item => item.quantity > 0);
+    });
   };
 
-  const totalItems = useMemo(() => cart.reduce((acc, item) => acc + item.quantity, 0), [cart]);
-  const totalPrice = useMemo(() => cart.reduce((acc, item) => acc + (item.product.price * item.quantity), 0), [cart]);
+  const totalItems = useMemo(() => {
+    return cart.reduce((acc, item) => acc + item.quantity, 0);
+  }, [cart]);
 
-  // Clean the cart when total sum is 0
-  useEffect(() => {
-    if (cart.length > 0 && totalPrice === 0) {
-      setCart([]);
-    }
-  }, [totalPrice, cart.length]);
+  const totalPrice = useMemo(() => {
+    return cart.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
+  }, [cart]);
 
   const sendWhatsApp = () => {
     if (cart.length === 0) return;
@@ -338,25 +359,49 @@ export default function App() {
       </AnimatePresence>
 
       {/* Floating Buttons */}
-      <div className="fixed bottom-6 left-6 flex flex-col gap-3 z-40">
-        <motion.a 
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          href="https://www.instagram.com/comercialvn/reels/" 
-          target="_blank"
-          className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] flex items-center justify-center text-white shadow-lg shadow-pink-200"
+      <div className="fixed bottom-6 right-6 flex flex-col items-end gap-3 z-40">
+        {/* Balão de Dúvidas / Material não encontrado */}
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex items-center gap-3"
         >
-          <Instagram size={28} />
-        </motion.a>
-        <motion.a 
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          href="https://api.whatsapp.com/send?phone=5584994286142" 
-          target="_blank"
-          className="w-14 h-14 rounded-2xl bg-[#25D366] flex items-center justify-center text-white shadow-lg shadow-green-200"
-        >
-          <Phone size={28} />
-        </motion.a>
+          <div className="bg-white px-4 py-2 rounded-2xl shadow-xl border border-blue-100 hidden md:block">
+            <p className="text-[#0a4ea3] text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
+              Não achou o que procurava?
+            </p>
+          </div>
+          <motion.a 
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            whileTap={{ scale: 0.9 }}
+            href="https://api.whatsapp.com/send?phone=5584994286142&text=Olá! Não encontrei o que procurava no catálogo, pode me ajudar?" 
+            target="_blank"
+            className="w-16 h-16 rounded-[24px] bg-white flex items-center justify-center text-[#0a4ea3] shadow-2xl shadow-blue-100 border border-blue-100 group"
+          >
+            <HelpCircle size={32} className="group-hover:text-blue-600 transition-colors" />
+          </motion.a>
+        </motion.div>
+
+        <div className="flex gap-3">
+          <motion.a 
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            href="https://www.instagram.com/comercialvn/reels/" 
+            target="_blank"
+            className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] flex items-center justify-center text-white shadow-lg shadow-pink-200"
+          >
+            <Instagram size={28} />
+          </motion.a>
+          <motion.a 
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            href="https://api.whatsapp.com/send?phone=5584994286142" 
+            target="_blank"
+            className="w-14 h-14 rounded-2xl bg-[#25D366] flex items-center justify-center text-white shadow-lg shadow-green-200"
+          >
+            <Phone size={28} />
+          </motion.a>
+        </div>
       </div>
 
       {/* Checkout Modal / Detailed Cart View */}
